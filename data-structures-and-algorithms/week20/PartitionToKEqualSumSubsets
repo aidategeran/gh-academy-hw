@@ -1,0 +1,101 @@
+class Solution {
+    public boolean canPartitionKSubsets(int[] nums, int k) {
+        // Calculate the sum of all numbers in nums.
+        int sum = 0;
+        for (int x : nums) {
+            sum += x;
+        }
+
+        //The first crucial idea behind backtracking in this problem 
+        // is to mark wich numbers I have "used",
+        // == which numbers (indices) I've put into one of the subsets so far,
+        // == which numbers (indices) I can't put into the current or future subsets because they are "in use".
+        // e.g., if I generated two subsets with numbers (5) and (1,3) so far then used array could like:
+        // nums=[1,2,2,3,3,4,5]
+        // used=[1,0,0,1,0,0,1]
+        boolean [] used = new boolean [nums.length];
+
+        // If the sum of all numbers doesn't divide by k, then it is impossible
+        // to partition numbers, no matter what we will try.
+        if (sum % k != 0) {
+            return false;
+        }
+        
+        //[4,3,2,3,5,2,1] is sorted into [1,2,2,3,3,4,5]
+        //The zero-th important idea is that we can sort the array
+        //and generate subsets of non-decreasing numbers,
+        //e.g (1,3,3,4) and not (4,3,1,3) or smth like that.
+        Arrays.sort(nums);
+
+        // The second important idea is: I will only generate each subset with indices in the increasing order,
+        // i.e. I will be doing extra work if I will be generating subsets with mixed indices order,
+        // e.g. if nums=[1,2,2,3,3,4,5], then subset of indices (0,2,4,6) gives the same subset of values as
+        // subset of indices (4,2,0,6) - there is no point in generating subsets with mixed order, we can
+        // just stick to an order of increasing inidices like (0,2,4,6).
+
+
+        // Starting parameters:
+        // * int [] nums = nums,                      -> original nums array 
+        // * int k = k,                               -> how many subsets still left to generate 
+        // * int currSum = 0,                         -> sum of the current [k-th] subset that I'm generating
+        // * int idx = 0,                             -> to implement the second important idea, we will 
+        //                                               maintain idx - the index starting from which I should    start picking next numbers, e.g. if the previous that I picked was at index 2, then the next number I can pick should have index of at least 3, so idx = 3 for the next backtracking call
+        // * boolean [] used = [false] x n.           -> numbers I used so far and cannot out in the current subset anymore 
+        // * int target = sum/k                 -> sum that I want to achieve for each subset                                                            
+
+        return backtrack(nums, k, 0, 0, used, sum / k);
+        
+    }
+
+    boolean [] backtrack ( int [] nums, int k, int currSum, int idx, boolean [] used, int target) {
+        if (k == 1) {
+        // If we have formed k - 1 subsets with target sum and need to create the last subset,
+        // then the remaining unused elements should obviously have a total sum == target
+        // So just return true 
+        return true;  
+        }
+        if (currSum == target) {
+            // if current subset has the target sum, partition the rest of the unused elements 
+            // into k - 1 subsets.
+            return backtrack (nums, k - 1, 0, 0, used, target); 
+        }
+        for (int i = idx; i < nums.length; i++) {
+            // e.g.
+            // Let nums = [..., 25,25, ...].
+            // if used =  [..., F, F,  ...],
+            // then since nums[i] == nums [i - 1] and used [i - 1] == false, 
+            // we can conclude that previously we should have already tried 
+            // to pick the previous 25, i.e the cases
+            // nums = [..., 25,25, ...] & 
+            // used =  [..., T, F, ...] and 
+            // nums = [..., 25,25, ...] & 
+            // used =  [..., T, T, ...]
+            // so there is really no point in re-doing the work by backtracking from 
+            // nums = [..., 25,25, ...] and 
+            // used =  [..., F, T, ...].
+            if ( used[i] || i > 0 && nums [i] == nums [i - 1] && !used [i - 1] ) {
+                continue;
+            }
+
+            // Include current (unused) number at index i into the current subset.
+            // The next element should be among indices [i + 1 ... n - 1]  - there is no point 
+            // is redoing the work by trying smaller indices. 
+            used [i] = true;
+            if (currSum + nums[i] <= target && backtrack(nums, k, currSum + nums [i], i + 1, used, target)) {
+               // if succesful partitioning is found down this recursion branch, 
+               // then return true upstream immediatly.
+                return true;
+            }
+
+            // if succesful partitioning is not found down this recursion branch,
+            // then unmark the current element as unused and try to not include it and 
+            // move to the next element
+            used [i] = false;
+
+        }
+        // If no partitioning was found given the constrains, return false 
+        return false;  
+
+      
+    }
+}
