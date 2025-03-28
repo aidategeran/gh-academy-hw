@@ -1,0 +1,70 @@
+class Solution {
+  public boolean canPartitionKSubsets(int[] nums, int k) {
+    // Calculate the sum of all numbers in nums.
+    int sum = 0;
+    for (int x : nums) {
+      sum += x;
+    }
+    boolean[] used = new boolean[nums.length];
+    // If the sum of all numbers doesn't divide by k, then it is impossible
+    // to partition numbers, no matter what we will try.
+    if (sum % k != 0) {
+      return false;
+    }
+    Arrays.sort(nums);
+    // int[] nums, int k, int currSum, int idx, boolean[] used, int target
+    return backtrack(nums, k, 0, 0, used, sum / k);
+  }
+ 
+  boolean backtrack(int[] nums, int k, int currSum, int idx, boolean[] used, int target) {
+    if (k == 1) {
+      // If we have formed k - 1 subsets with target sum and need to create the last
+      // subset,
+      // then the remaining unused elements should obviously have a total sum ==
+      // target.
+      // So, just return true.
+      return true;
+    }
+    if (currSum == target) {
+      // If current subset has the target sum, partition the rest of the unused
+      // elements
+      // into k - 1 subsets.
+      return backtrack(nums, k - 1, 0, 0, used, target);
+    }
+    for (int i = idx; i < nums.length; i++) {
+      // e.g.                  i
+      //                       |
+      //                       v
+      // Let nums = [..., 25, 25, ...].
+      // If  used = [...,  F,  F, ...],
+      // then since nums[i] == nums[i - 1] and used[i - 1] == false,
+      // we can conclude that previously we should have already tried
+      // to pick the previous 25, i.e. the cases
+      // nums = [..., 25, 25, ...] &
+      // used = [...,  T,  F, ...] and
+      // nums = [..., 25, 25, ...] &
+      // used = [...,  T,  T, ...],
+      // so there is really no point in re-doing the work by backtracking from
+      // nums = [..., 25, 25, ...] and
+      // used = [...,  F,  T, ...].
+      if (used[i] || i > 0 && nums[i] == nums[i - 1] && !used[i - 1]) {
+        continue;
+      }
+      // Include current (unused) number at index i into the current subset.
+      // The next element should be among indices [i + 1 .. n - 1] – there is no point
+      // in redoing the work by trying smaller indices.
+      used[i] = true;
+      if (backtrack(nums, k, currSum + nums[i], i + 1, used, target)) {
+        // If a successful partitioning is found down this recursion branch,
+        // then return true upstream immediately.
+        return true;
+      }
+      // If a successful partitioning is not found down this recursion branch,
+      // then unmark the current element as unused and try to not include it and
+      // move to the next element.
+      used[i] = false;
+    }
+    // If no partitioning was found given the constraints, return false.
+    return false;
+  }
+}
